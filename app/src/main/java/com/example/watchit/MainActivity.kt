@@ -16,11 +16,20 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        //ler se tem usuário logado
         val sharedpreferences = getSharedPreferences(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE)
         val editor = sharedpreferences.edit()
+        val usuario_logado: String? = sharedpreferences.getString("usuario_logado", null)
+        if(!usuario_logado.isNullOrEmpty())
+        {
+            //se tiver usuário logado carrega activity da home
+            val show = Intent(this, HomeActivity::class.java)
+            startActivity(show)
+        }
 
+        //FUNCOES DE ACAO-------------------------------------------------------------------------------------------------
 
-        //FUNCAO DE LOGIN
+        //ao clicar no botão de login, validar as informações e fazer login
         val btn_login = findViewById<Button>(R.id.btnLogin)
         btn_login.setOnClickListener {
 
@@ -45,19 +54,14 @@ class MainActivity : AppCompatActivity() {
             else
             {
                 //sem inputs invalidos, pesquisa na api/json
+                var retorno_login = login(txtEmail.text.toString(), txtSenha.text.toString())
                 var log = 0
-                if(txtEmail.text.toString() == "joaokussler@gmail.com")
-                {
-                    if(txtSenha.text.toString() == "123456")
-                    {
-                        //faz login e redireciona
-                        log = 1
-                        editor.putString("usuario_logado", "João Vitor")
-                        editor.commit()
-                        val show = Intent(this, HomeActivity::class.java)
-                        startActivity(show)
-
-                    }
+                if (!retorno_login.isNullOrEmpty()) {
+                    log = 1
+                    editor.putString("usuario_logado", retorno_login)
+                    editor.commit()
+                    val show = Intent(this, HomeActivity::class.java)
+                    startActivity(show)
                 }
                 if(log == 0)
                 {
