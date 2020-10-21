@@ -54,11 +54,12 @@ class MainActivity : AppCompatActivity() {
             else
             {
                 //sem inputs invalidos, pesquisa na api/json
-                var retorno_login = login(txtEmail.text.toString(), txtSenha.text.toString())
+                var retornologin = 0
+                retornologin = login(txtEmail.text.toString(), txtSenha.text.toString())
                 var log = 0
-                if (!retorno_login.isNullOrEmpty()) {
+                if (retornologin >= 1) {
                     log = 1
-                    editor.putString("usuario_logado", retorno_login)
+                    editor.putString("usuario_logado", retornologin.toString())
                     editor.commit()
                     val show = Intent(this, HomeActivity::class.java)
                     startActivity(show)
