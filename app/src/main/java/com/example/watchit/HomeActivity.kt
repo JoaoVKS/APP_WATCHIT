@@ -1,15 +1,16 @@
 package com.example.watchit
 
+
 import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.*
+import androidx.annotation.UiThread
 import androidx.appcompat.app.AppCompatActivity
-
-
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import kotlinx.android.synthetic.main.activity_home.*
+import kotlin.concurrent.thread
 
 
 class HomeActivity : AppCompatActivity() {
@@ -55,6 +56,13 @@ class HomeActivity : AppCompatActivity() {
                 val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, Stext)
 
                 spiBt.adapter = adapter
+
+                val connDevice: String? = sharedpreferences.getString("device", null)
+                if(!connDevice.isNullOrEmpty())
+                {
+                    //ja tem um aparelho
+                    spiBt.setSelection(adapter.getPosition(connDevice))
+                }
             }
 
             //FUNCOES DE ACAO-------------------------------------------------------------------------------------------------
@@ -85,6 +93,39 @@ class HomeActivity : AppCompatActivity() {
                             editor.putString("device", selecionado.nome)
                             editor.commit()
                             Toast.makeText(this@HomeActivity, "Pareado com ${selecionado.nome}", Toast.LENGTH_SHORT).show()
+                            var bpmFake = rand(60, 80)
+
+                            //Cria thread que vai rodar a cada segundo para verificar o que deve ser feito em relação a medição
+                            var lit = findViewById<TextView>(R.id.litTemp)
+
+                            var thread: Thread = object : Thread() {
+                                override fun run() {
+                                    try {
+                                        while (!this.isInterrupted) {
+                                            sleep(10000)
+                                            runOnUiThread(Runnable {
+                                                //código da theread
+
+                                                //pega o bpm falso
+                                                bpmFake = rand(60, 80)
+
+                                                //envia para a tela
+                                                litTemp.text = "$bpmFake BPM"
+
+                                                //faz o post com os dados
+                                                sendJsonData("https://webhook.site/56705da7-f8a1-489b-adda-5a3a098c5ba7", bpmFake.toString(), usuariologado!!.id, 1)
+
+                                            })
+                                        }
+                                    } catch (e: InterruptedException) {
+                                    }
+                                }
+                            }
+
+                            thread.start()
+
+                            var rodando = 1
+
                         }
                         else
                             Toast.makeText(this@HomeActivity, "Não foi possível parear com ${selecionado.nome}", Toast.LENGTH_SHORT).show()
@@ -92,6 +133,7 @@ class HomeActivity : AppCompatActivity() {
                 }
                 override fun onNothingSelected(parent: AdapterView<*>) {
                     //caso nada seja selecionado
+
                 }
             }
             //FUNCOES DE ACAO-------------------------------------------------------------------------------------------------
@@ -104,3 +146,4 @@ class HomeActivity : AppCompatActivity() {
         }
     }
 }
+

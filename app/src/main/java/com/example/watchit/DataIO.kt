@@ -1,5 +1,8 @@
 package com.example.watchit
 
+import com.github.kittinunf.fuel.Fuel
+import com.github.kittinunf.fuel.httpGet
+import com.github.kittinunf.fuel.httpPost
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -7,12 +10,8 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import java.lang.Exception
 import java.security.MessageDigest
-
-
-/*class BluetoothDeviceItem (nomeInput: String, enderecoInput: String){
-    val nome = nomeInput
-    val endereco = enderecoInput
-}*/
+import java.time.LocalDateTime
+import kotlin.random.Random
 
 @Serializable
 data class User (
@@ -24,6 +23,30 @@ data class User (
     var last_name : String,
     var password : String
 )
+
+
+fun sendJsonData(url: String, data: String, idUser: Int, idCategory: Int)
+{
+
+    val currentDateTime = LocalDateTime.now().toString()
+    val bodyJson =
+        """
+        {
+        "data" : "$data",
+        "date" : "$currentDateTime",
+        "id_category" : $idCategory,
+        "id_user" : $idUser
+        }
+        """
+    Fuel.post(url)
+        .body(bodyJson)
+        .response { result -> }
+}
+
+fun rand(start: Int, end: Int): Int {
+    require(!(start > end || end - start + 1 > Int.MAX_VALUE)) { "Illegal Argument" }
+    return Random(System.nanoTime()).nextInt(end - start + 1) + start
+}
 
 fun hashPassword(password: String):String?{
     return hashString("SHA-1", password)
