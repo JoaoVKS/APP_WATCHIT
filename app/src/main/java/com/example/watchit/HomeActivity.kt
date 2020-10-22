@@ -96,8 +96,8 @@ class HomeActivity : AppCompatActivity() {
                             var bpmFake = rand(60, 80)
 
                             //Cria thread que vai rodar a cada segundo para verificar o que deve ser feito em relação a medição
-                            var lit = findViewById<TextView>(R.id.litTemp)
-
+                            var lit = findViewById<TextView>(R.id.litBPM)
+                            var swt = findViewById<Switch>(R.id.swtSend)
                             var thread: Thread = object : Thread() {
                                 override fun run() {
                                     try {
@@ -110,22 +110,20 @@ class HomeActivity : AppCompatActivity() {
                                                 bpmFake = rand(60, 80)
 
                                                 //envia para a tela
-                                                litTemp.text = "$bpmFake BPM"
+                                                lit.text = "$bpmFake BPM"
 
-                                                //faz o post com os dados
-                                                sendJsonData("https://webhook.site/56705da7-f8a1-489b-adda-5a3a098c5ba7", bpmFake.toString(), usuariologado!!.id, 1)
-
+                                                if(swt.isChecked)
+                                                {
+                                                    //faz o post com os dados se o usuário quiser
+                                                    sendJsonData("https://webhook.site/56705da7-f8a1-489b-adda-5a3a098c5ba7", bpmFake.toString(), usuariologado!!.id, 1)
+                                                }
                                             })
                                         }
                                     } catch (e: InterruptedException) {
                                     }
                                 }
                             }
-
                             thread.start()
-
-                            var rodando = 1
-
                         }
                         else
                             Toast.makeText(this@HomeActivity, "Não foi possível parear com ${selecionado.nome}", Toast.LENGTH_SHORT).show()

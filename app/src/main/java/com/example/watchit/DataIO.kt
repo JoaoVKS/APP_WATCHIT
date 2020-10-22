@@ -27,7 +27,6 @@ data class User (
 
 fun sendJsonData(url: String, data: String, idUser: Int, idCategory: Int)
 {
-
     val currentDateTime = LocalDateTime.now().toString()
     val bodyJson =
         """
