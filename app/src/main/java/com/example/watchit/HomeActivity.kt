@@ -9,13 +9,37 @@ import android.view.View
 import android.widget.*
 import androidx.annotation.UiThread
 import androidx.appcompat.app.AppCompatActivity
+import com.github.kittinunf.fuel.Fuel
 import kotlinx.android.synthetic.main.activity_home.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
 import kotlin.concurrent.thread
+import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import java.net.URL
+import com.github.kittinunf.fuel.httpGet
+import com.github.kittinunf.fuel.httpPost
+import  com.github.kittinunf.result.Result
+import com.github.kittinunf.result.getAs
 
 
 class HomeActivity : AppCompatActivity() {
+
+    private var job: Job = Job()
+
+    val coroutineContext: CoroutineContext
+    get() = Dispatchers.Main + job
+
+    override fun onDestroy() {
+        super.onDestroy()
+        job.cancel()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
 
         //ligar bluetooth
         val mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
@@ -24,9 +48,11 @@ class HomeActivity : AppCompatActivity() {
         setContentView(R.layout.activity_home)
         val sharedpreferences = getSharedPreferences(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE)
         val editor = sharedpreferences.edit()
-        val btnSair = findViewById<Button>(R.id.btnSair)
 
+        val btnSair = findViewById<Button>(R.id.btnSair)
+        var lit = findViewById<TextView>(R.id.litBPM)
         var spiBt = findViewById<Spinner>(R.id.spiDevices)
+
         val idUsuarioLogado: String? = sharedpreferences.getString("usuario_logado", null)
         if(!idUsuarioLogado.isNullOrEmpty())
         {
@@ -93,21 +119,29 @@ class HomeActivity : AppCompatActivity() {
                             editor.putString("device", selecionado.nome)
                             editor.commit()
                             Toast.makeText(this@HomeActivity, "Pareado com ${selecionado.nome}", Toast.LENGTH_SHORT).show()
-                            var bpmFake = rand(60, 80)
+                            var bpmFake = 0
 
                             //Cria thread que vai rodar a cada segundo para verificar o que deve ser feito em relação a medição
-                            var lit = findViewById<TextView>(R.id.litBPM)
+                            lit.text = "$bpmFake BPM"
+
                             var swt = findViewById<Switch>(R.id.swtSend)
                             var thread: Thread = object : Thread() {
                                 override fun run() {
                                     try {
                                         while (!this.isInterrupted) {
-                                            sleep(10000)
+                                            sleep(5000)
                                             runOnUiThread(Runnable {
-                                                //código da theread
+                                                //código da Thread
 
                                                 //pega o bpm falso
-                                                bpmFake = rand(60, 80)
+                                                Fuel.get("https://joaovks.pythonanywhere.com/set").response { result ->
+                                                    when (result) {
+                                                        is Result.Failure -> { }
+                                                        is Result.Success -> {
+                                                            bpmFake = String(result.get()).toInt()
+                                                        }
+                                                    }
+                                                }
 
                                                 //envia para a tela
                                                 lit.text = "$bpmFake BPM"

@@ -1,33 +1,37 @@
 package com.example.watchit
 
+import android.content.Context
+import android.os.Build
+import android.preference.PreferenceManager
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
+import com.github.kittinunf.result.Result
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.SerializationStrategy
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.*
 import java.lang.Exception
 import java.security.MessageDigest
 import java.time.LocalDateTime
+import kotlin.coroutines.coroutineContext
 import kotlin.random.Random
 
-@Serializable
-data class User (
-    var aditional_infos : String,
-    var email : String,
-    var first_name : String,
-    var birthday : String,
-    var id : Int = 0,
-    var last_name : String,
-    var password : String
-)
 
+
+fun getBPM():Int {
+    //simula o que seria a conexão/coleta de dados com o smartwatch
+    return rand(71, 99)
+}
 
 fun sendJsonData(url: String, data: String, idUser: Int, idCategory: Int)
 {
-    val currentDateTime = LocalDateTime.now().toString()
+    val currentDateTime = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        LocalDateTime.now().toString()
+    } else {
+        TODO("VERSION.SDK_INT < O")
+        ""
+    }
     val bodyJson =
         """
         {
@@ -71,8 +75,8 @@ private fun getUsersJson():String
 {
     //DADOS FALSOS TEMPORARIOS PARA SIMULAR RETORNO DA API
     var jsonstring = ""
-    jsonstring += "{\"aditional_infos\":\"bronquite crônica\", \"birthday\":\"1995-12-09\", \"email\":\"jonathanb@hotmail.com\", \"first_name\":\"Jonathan\", \"id\":1, \"last_name\":\"Bockorny\", \"password\":\"7c4a8d09ca3762af61e59520943dc26494f8941b\"},"
-    jsonstring += "{\"aditional_infos\":\"informacao extra teste\", \"birthday\":\"1998-03-15\", \"email\":\"joaokussler@gmail.com\", \"first_name\":\"João Vitor\", \"id\":2, \"last_name\":\"Kussler\", \"password\":\"7c4a8d09ca3762af61e59520943dc26494f8941b\"}"
+    jsonstring += "{\"aditional_infos\":\"Lorem ipsum\", \"birthday\":\"1995-12-09\", \"email\":\"jonathanb@hotmail.com\", \"first_name\":\"Jonathan\", \"id\":1, \"last_name\":\"Bockorny\", \"password\":\"7c4a8d09ca3762af61e59520943dc26494f8941b\"},"
+    jsonstring += "{\"aditional_infos\":\"Lorem ipsum\", \"birthday\":\"1998-03-15\", \"email\":\"joaokussler@gmail.com\", \"first_name\":\"João Vitor\", \"id\":2, \"last_name\":\"Kussler\", \"password\":\"7c4a8d09ca3762af61e59520943dc26494f8941b\"}"
     return jsonstring
 }
 
@@ -105,7 +109,7 @@ fun getUsers():  ArrayList<User>
 
 fun getUser(id: Int): User?
 {
-    var retorno: User? = User("","","","",0,"","")
+    var retorno: User? = User("", "", "", "", 0, "", "")
     val usuarios = getUsers()
     if (usuarios != null) {
         if(usuarios.count() > 0) {
@@ -133,4 +137,45 @@ fun login(email: String, senha: String ): Int
     }
 
     return retorno
+}
+
+fun cadastro(usuario: User): String
+{
+    var retorno = ""
+    //simula get na API
+    val usuarios = getUsers()
+    val existe = usuarios!!.find { x -> x.email.toLowerCase() == usuario.email.toLowerCase()}
+    if(existe != null)
+    {
+        return "E-mail já cadastrado"
+    }
+    var senhacodificada = hashPassword(usuario.password).toString().toLowerCase()
+    var tempJlement = Json.encodeToJsonElement(usuario)
+    retorno = tempJlement.toString()
+    postCadastro(retorno)
+    return retorno
+}
+
+fun postCadastro(bodyJson: String): Int
+{
+    var retorno = 0
+    //Faz post com o json do usuário para cadastrar na API
+    Fuel.post("url")
+        .body(bodyJson)
+        .response { result ->
+            when (result) {
+                is Result.Failure ->  retorno = 0
+                is Result.Success ->
+                {
+                    //VALIDAR COM O JONATHAN O RETORNO DA API
+                    var resp = Json.decodeFromString<UserResponse>(result.get().toString())
+                    if(resp != null && resp.id > 0)
+                    {
+                        retorno = resp.id
+                    }
+                }
+            }
+        }
+
+    return  retorno
 }

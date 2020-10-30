@@ -70,6 +70,12 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
+        val btnIrCadastro = findViewById<Button>(R.id.btnIrCadastro)
+        btnIrCadastro.setOnClickListener {
+            val show = Intent(this, RegisterActivity::class.java)
+            startActivity(show)
+        }
     }
 }
 

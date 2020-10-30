@@ -1,7 +1,12 @@
 <resources>
     <string name="app_name">WatchIt</string>
     <string name="btnLogin_text">Entrar</string>
+    <string name="btnCadastro_text">Cadastrar</string>
+    <string name="btnVoltar_text">Voltar</string>
     <string name="lblEmail">E-mail</string>
+    <string name="lblNome">Nome</string>
+    <string name="lblAniversario">Aniversário</string>
+    <string name="lblInformacoes_adicionais">Informações Adicionais</string>
     <string name="lblSenha">Senha</string>
     <string name="verifiqueCampos">Por favor verifique os seguintes campos:</string>
     <string name="title_activity_home">WatchIt</string>
