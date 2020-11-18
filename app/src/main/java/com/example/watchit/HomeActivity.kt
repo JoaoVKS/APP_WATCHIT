@@ -1,33 +1,27 @@
 package com.example.watchit
 
 
+import android.app.Activity
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.*
-import androidx.annotation.UiThread
 import androidx.appcompat.app.AppCompatActivity
 import com.github.kittinunf.fuel.Fuel
-import kotlinx.android.synthetic.main.activity_home.*
+import com.github.kittinunf.result.Result
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
-import kotlin.concurrent.thread
 import kotlin.coroutines.CoroutineContext
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import java.net.URL
-import com.github.kittinunf.fuel.httpGet
-import com.github.kittinunf.fuel.httpPost
-import  com.github.kittinunf.result.Result
-import com.github.kittinunf.result.getAs
 
 
 class HomeActivity : AppCompatActivity() {
-
+    private val REQUEST_CODE_ENABLE_BT = 1
     private var job: Job = Job()
+    val EXTRA_ADRESS: String = "Device_address"
+    private var devicesbt: MutableList<BluetoothDevice> = ArrayList()
 
     val coroutineContext: CoroutineContext
     get() = Dispatchers.Main + job
@@ -60,6 +54,7 @@ class HomeActivity : AppCompatActivity() {
             //pega o nome do usuário pelo json da api usando o id guardado no login
             var usuariologado = getUser(idUsuarioLogado.toInt())
             val s: MutableList<BluetoothDeviceItem> = ArrayList()
+
             if(usuariologado != null)
             {
                 Toast.makeText(this@HomeActivity, "Olá, ${usuariologado.first_name}", Toast.LENGTH_SHORT).show()
@@ -73,6 +68,7 @@ class HomeActivity : AppCompatActivity() {
                 {
                     s.add(BluetoothDeviceItem(bt.name, bt.address));
                     Stext.add(bt.name)
+                    devicesbt.add(bt)
                 }
 
                 //Smartwatch de testes
@@ -160,7 +156,25 @@ class HomeActivity : AppCompatActivity() {
                             thread.start()
                         }
                         else
-                            Toast.makeText(this@HomeActivity, "Não foi possível parear com ${selecionado.nome}", Toast.LENGTH_SHORT).show()
+                        {
+                            try {
+                                //mBluetoothAdapter
+                                //var intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+                                //startActivityForResult(intent, REQUEST_CODE_ENABLE_BT)
+                                val btdevice = devicesbt.filter { x -> x.address == selecionado.endereco }.firstOrNull()
+                                if(btdevice != null)
+                                {
+                                    val address: String = btdevice.address
+                                    val intent = Intent(this, ControlActivity::class.java)
+                                    intent.putExtra(EXTRA_ADRESS, address)
+
+                                }
+                            }
+                            catch (ex:Exception)
+                            {
+                                Toast.makeText(this@HomeActivity, "Não foi possível parear com ${selecionado.nome}", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     }
                 }
                 override fun onNothingSelected(parent: AdapterView<*>) {
@@ -168,6 +182,9 @@ class HomeActivity : AppCompatActivity() {
 
                 }
             }
+
+
+
             //FUNCOES DE ACAO-------------------------------------------------------------------------------------------------
         }
         else
