@@ -15,5 +15,3 @@ data class User(var aditional_infos : String = "",
 
 }
 
-@Serializable
-data class UserResponse(val id: Int)

@@ -3,10 +3,12 @@ package com.example.watchit
 import android.content.Context
 import android.os.Build
 import android.preference.PreferenceManager
+import androidx.annotation.RequiresApi
 import com.github.kittinunf.fuel.Fuel
 import com.github.kittinunf.fuel.httpGet
 import com.github.kittinunf.fuel.httpPost
 import com.github.kittinunf.result.Result
+import kotlinx.coroutines.delay
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationStrategy
 import kotlinx.serialization.decodeFromString
@@ -14,16 +16,12 @@ import kotlinx.serialization.json.*
 import java.lang.Exception
 import java.security.MessageDigest
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import kotlin.concurrent.thread
 import kotlin.coroutines.coroutineContext
 import kotlin.random.Random
 
-
-
-fun getBPM():Int {
-    //simula o que seria a conexão/coleta de dados com o smartwatch
-    return rand(71, 99)
-}
-
+@RequiresApi(Build.VERSION_CODES.O)
 fun sendJsonData(url: String, data: String, idUser: Int, idCategory: Int)
 {
     val currentDateTime = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -32,16 +30,11 @@ fun sendJsonData(url: String, data: String, idUser: Int, idCategory: Int)
         TODO("VERSION.SDK_INT < O")
         ""
     }
-    val bodyJson =
-        """
-        {
-        "data" : "$data",
-        "date" : "$currentDateTime",
-        "id_category" : $idCategory,
-        "id_user" : $idUser
-        }
-        """
+    var formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+    var formatted = currentDateTime.format(formatter).replace("T", " ").split('.').first()
+    val bodyJson = "{\"id_user\" : \"${idUser}\",\"date\" : \"${formatted}\",\"data\" : \"${data}\"}"
     Fuel.post(url)
+        .header("Content-type" to "application/json")
         .body(bodyJson)
         .response { result -> }
 }
@@ -75,14 +68,25 @@ private fun getUsersJson():String
 {
     //DADOS FALSOS TEMPORARIOS PARA SIMULAR RETORNO DA API
     var jsonstring = ""
-    jsonstring += "{\"aditional_infos\":\"Lorem ipsum\", \"birthday\":\"1995-12-09\", \"email\":\"jonathanb@hotmail.com\", \"first_name\":\"Jonathan\", \"id\":1, \"last_name\":\"Bockorny\", \"password\":\"7c4a8d09ca3762af61e59520943dc26494f8941b\"},"
-    jsonstring += "{\"aditional_infos\":\"Lorem ipsum\", \"birthday\":\"1998-03-15\", \"email\":\"joaokussler@gmail.com\", \"first_name\":\"João Vitor\", \"id\":2, \"last_name\":\"Kussler\", \"password\":\"7c4a8d09ca3762af61e59520943dc26494f8941b\"}"
+    Fuel.get("http://emerghelp1.pythonanywhere.com/selectJson")
+        .response { request, response, result ->
+            when(result)
+            {
+                is Result.Success -> {
+                    jsonstring = String(response.data).toString()
+                }
+            }
+        }
+    while(jsonstring.isNullOrEmpty())
+    {
+        Thread.sleep(100)
+    }
     return jsonstring
 }
 
 fun getUsers():  ArrayList<User>
 {
-    var jsonstring = "[" + getUsersJson() + "]"
+    var jsonstring = getUsersJson()
     var jsonLista = Json.parseToJsonElement(jsonstring).jsonArray
     var usuarios: ArrayList<User> = arrayListOf()
     try {
@@ -122,7 +126,21 @@ fun getUser(id: Int): User?
 
     return retorno
 }
+fun getUser(email: String): User?
+{
+    var retorno: User? = User("", "", "", "", 0, "", "")
+    val usuarios = getUsers()
+    if (usuarios != null) {
+        if(usuarios.count() > 0) {
+            var usuario = usuarios!!.find { x -> x.email.equals(email) }
+            if(usuario != null) {
+                retorno = usuario
+            }
+        }
+    }
 
+    return retorno
+}
 fun login(email: String, senha: String ): Int
 {
     var retorno = 0
@@ -139,43 +157,67 @@ fun login(email: String, senha: String ): Int
     return retorno
 }
 
-fun cadastro(usuario: User): String
+fun cadastro(usuario: User): Int
 {
-    var retorno = ""
+    var retorno = -1
     //simula get na API
     val usuarios = getUsers()
     val existe = usuarios!!.find { x -> x.email.toLowerCase() == usuario.email.toLowerCase()}
     if(existe != null)
     {
-        return "E-mail já cadastrado"
+        return -2
     }
     var senhacodificada = hashPassword(usuario.password).toString().toLowerCase()
-    var tempJlement = Json.encodeToJsonElement(usuario)
-    retorno = tempJlement.toString()
-    postCadastro(retorno)
+    var jsonsend = "{ \"first_name\": \"${usuario.first_name}\", \"last_name\": \"${usuario.last_name}\", \"birthday\": \"${usuario.birthday.replace('/', '-')}\", \"email\": \"${usuario.email}\", \"password\":\"${usuario.password}\", \"aditional_infos\": \"${usuario.aditional_infos}\" }"
+    retorno = postCadastro(retorno).toString()
     return retorno
 }
 
 fun postCadastro(bodyJson: String): Int
 {
-    var retorno = 0
+    var retorno = -1
+    var tmp = ""
     //Faz post com o json do usuário para cadastrar na API
-    Fuel.post("url")
+    Fuel.post("http://emerghelp1.pythonanywhere.com/insert")
+        .header("Content-type" to "application/json")
         .body(bodyJson)
-        .response { result ->
+        .response { request, response, result ->
             when (result) {
-                is Result.Failure ->  retorno = 0
+                is Result.Failure ->
+                {
+                    tmp = request.toString()
+                    tmp = response.toString()
+                    tmp = result.toString()
+                    retorno = 0
+                }
                 is Result.Success ->
                 {
                     //VALIDAR COM O JONATHAN O RETORNO DA API
-                    var resp = Json.decodeFromString<UserResponse>(result.get().toString())
+                    /*var resp = Json.decodeFromString<UserResponse>(result.get().toString())
                     if(resp != null && resp.id > 0)
                     {
                         retorno = resp.id
-                    }
+                    }*/
+                    retorno = 1
                 }
             }
         }
+    while(retorno < 0)
+    {
+        Thread.sleep(10)
+    }
 
     return  retorno
+}
+
+@Serializable
+data class UserResponse(var aditional_infos : String = "",
+                        var birthday : String = "",
+                        val email : String = "",
+                        var first_name : String = "",
+                        var id : Int =  0,
+                        var last_name : String = "",
+                        var password : String = "")
+{
+
 }

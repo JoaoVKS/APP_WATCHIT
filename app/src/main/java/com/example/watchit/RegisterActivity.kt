@@ -9,6 +9,8 @@ import android.widget.Toast
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.activity_main.txtEmail
 import kotlinx.android.synthetic.main.activity_register.*
+import com.redmadrobot.inputmask.MaskedTextChangedListener
+import com.redmadrobot.inputmask.helper.AffinityCalculationStrategy
 
 class RegisterActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,7 +27,12 @@ class RegisterActivity : AppCompatActivity() {
             startActivity(show)
         }
 
-        val btn_cadastro = findViewById<Button>(R.id.btnCadastro)
+        //mascara de data no campo
+        val listener = MaskedTextChangedListener("[00]/[00]/[0000]", txtBirthbay)
+        txtBirthbay.addTextChangedListener(listener)
+        txtBirthbay.onFocusChangeListener = listener
+
+        var btn_cadastro = findViewById<Button>(R.id.btnCadastro)
         btn_cadastro.setOnClickListener {
 
             //VALIDACAO DOS CAMPOS DE LOGIN
@@ -48,7 +55,7 @@ class RegisterActivity : AppCompatActivity() {
                 else
                     erros += "\nAniversário"
             }
-            if (txtSenha.text.isNullOrEmpty()) {
+            if (txtPassword.text.isNullOrEmpty()) {
                 if (erros.isNullOrEmpty())
                     erros += "Senha"
                 else
@@ -63,7 +70,7 @@ class RegisterActivity : AppCompatActivity() {
             else {
                 //sem inputs invalidos, cadastra na api/json
                 var novoUsuario: User? = User("", "", "", "", 0, "", "")
-                if (novoUsuario != null) {
+                if(novoUsuario != null) {
                     novoUsuario.first_name = txtName.text.split(" ").first()
                     novoUsuario.last_name = txtName.text.split(" ").last()
                     novoUsuario.email = txtEmail.text.toString()
@@ -71,26 +78,47 @@ class RegisterActivity : AppCompatActivity() {
                     novoUsuario.password = txtPassword.text.toString()
                     novoUsuario.aditional_infos = txtAdditional_Infos.text.toString()
 
-                    var retornoCadastro = ""
+                    var retornoCadastro = 0
                     retornoCadastro = cadastro(novoUsuario)
-                    var log = retornoCadastro.toIntOrNull()
-                    if (retornoCadastro != null && retornoCadastro.toInt() >= 0) {
-                        log = 1
-                        editor.putString("usuario_logado", retornoCadastro.toString())
-                        editor.commit()
-                        val show = Intent(this, HomeActivity::class.java)
-                        startActivity(show)
+                    if (retornoCadastro > 0) {
+                        novoUsuario = getUser(novoUsuario.email)
+                        if(novoUsuario != null)
+                        {
+                            editor.putString("usuario_logado", retornoCadastro.toString())
+                            editor.commit()
+                            val show = Intent(this, HomeActivity::class.java)
+                            startActivity(show)
+                        }
+                        else
+                        {
+                            txtAdditional_Infos.text = txtPassword.text = txtBirthbay.text = txtEmail.text = txtName.text = ""
+                            Toast.makeText(
+                                this@RegisterActivity,
+                                "Cadastrado com sucesso!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    } else {
+                        var errortext = ""
+                        if(retornoCadastro == -1)
+                        {
+                            errortext = "Algo deu errado, tente novamente mais tarde"
+                        }
+                        if(retornoCadastro == -2)
+                        {
+                            errortext = "E-mail já cadastrado."
+                        }
+                        Toast.makeText(
+                            this@RegisterActivity,
+                            errortext,
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
-                } else {
-                    Toast.makeText(
-                        this@RegisterActivity,
-                        "Algo deu errado, tente novamente.",
-                        Toast.LENGTH_SHORT
-                    ).show()
                 }
             }
         }
-        val btnVoltar = findViewById<Button>(R.id.btnVoltar)
+
+        var btnVoltar = findViewById<Button>(R.id.btnVoltar)
         btnVoltar.setOnClickListener {
             val show = Intent(this, MainActivity::class.java)
             startActivity(show)
