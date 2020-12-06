@@ -159,7 +159,7 @@ fun login(email: String, senha: String ): Int
 
 fun cadastro(usuario: User): Int
 {
-    var retorno = -1
+    var retorno:Int = -1
     //simula get na API
     val usuarios = getUsers()
     val existe = usuarios!!.find { x -> x.email.toLowerCase() == usuario.email.toLowerCase()}
@@ -169,7 +169,7 @@ fun cadastro(usuario: User): Int
     }
     var senhacodificada = hashPassword(usuario.password).toString().toLowerCase()
     var jsonsend = "{ \"first_name\": \"${usuario.first_name}\", \"last_name\": \"${usuario.last_name}\", \"birthday\": \"${usuario.birthday.replace('/', '-')}\", \"email\": \"${usuario.email}\", \"password\":\"${usuario.password}\", \"aditional_infos\": \"${usuario.aditional_infos}\" }"
-    retorno = postCadastro(retorno).toString()
+    retorno = postCadastro(jsonsend)
     return retorno
 }
 
@@ -193,11 +193,11 @@ fun postCadastro(bodyJson: String): Int
                 is Result.Success ->
                 {
                     //VALIDAR COM O JONATHAN O RETORNO DA API
-                    /*var resp = Json.decodeFromString<UserResponse>(result.get().toString())
+                    var resp = Json.decodeFromString<UserResponse>(result.get().toString())
                     if(resp != null && resp.id > 0)
                     {
                         retorno = resp.id
-                    }*/
+                    }
                     retorno = 1
                 }
             }

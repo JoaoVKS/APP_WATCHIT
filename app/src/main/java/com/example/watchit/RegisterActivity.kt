@@ -16,7 +16,14 @@ class RegisterActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_register)
-
+        fun limpaCampos()
+        {
+            txtAdditional_Infos.text.clear()
+            txtPassword.text.clear()
+            txtBirthbay.text.clear()
+            txtEmail.text.clear()
+            txtName.text.clear()
+        }
         //ler se tem usuário logado
         val sharedpreferences = getSharedPreferences(PREFERENCES_FILE_NAME, Context.MODE_PRIVATE)
         val editor = sharedpreferences.edit()
@@ -91,7 +98,7 @@ class RegisterActivity : AppCompatActivity() {
                         }
                         else
                         {
-                            txtAdditional_Infos.text = txtPassword.text = txtBirthbay.text = txtEmail.text = txtName.text = ""
+                            limpaCampos()
                             Toast.makeText(
                                 this@RegisterActivity,
                                 "Cadastrado com sucesso!",
@@ -100,6 +107,18 @@ class RegisterActivity : AppCompatActivity() {
                         }
                     } else {
                         var errortext = ""
+                        if(retornoCadastro == 0)
+                        {
+                            var tenta = getUser(novoUsuario.email)
+                            if(tenta != null)
+                            {
+                                editor.putString("usuario_logado", tenta.id.toString())
+                                editor.commit()
+                                val show = Intent(this, HomeActivity::class.java)
+                                startActivity(show)
+                            }
+                        }
+
                         if(retornoCadastro == -1)
                         {
                             errortext = "Algo deu errado, tente novamente mais tarde"
